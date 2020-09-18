@@ -1,28 +1,72 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
+    <v-app id="granibot">
+        <v-navigation-drawer v-model="drawer" app clipped>
+            <v-list dense>
+                <v-list-item link @click="$router.push({name: 'newGroup'})" :disabled="$route.name === 'newGroup'">
+                    <v-list-item-action>
+                        <v-icon>mdi-account-multiple-plus</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>Новая группа</v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
+                <v-list-item link @click="$router.push({name: 'sendMessage'})" :disabled="$route.name === 'sendMessage'">
+                    <v-list-item-action>
+                        <v-icon>mdi-telegram</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>Новое сообщение</v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
+                <v-list-item  @click="$router.push({name: 'listGroups'})" :disabled="$route.name === 'listGroups'">
+                    <v-list-item-action>
+                        <v-icon>mdi-account-multiple</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>Список групп</v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
+                <v-list-item  @click="$router.push({name: 'listChats'})" :disabled="$route.name === 'listChats'">
+                    <v-list-item-action>
+                        <v-icon>mdi-account</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>Список участников</v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
+            </v-list>
+        </v-navigation-drawer>
+
+        <v-app-bar app clipped-left>
+            <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+            <v-toolbar-title>Термигранатор</v-toolbar-title>
+        </v-app-bar>
+
+        <v-main>
+            <router-view></router-view>
+        </v-main>
+
+        <v-footer app>
+        </v-footer>
+    </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
-export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
-}
+    export default {
+        name: 'App',
+        data: () => ({
+            drawer: null,
+        }),
+        mounted() {
+            this.$store.dispatch('loadAllGroups');
+            this.$store.dispatch('loadAllChats');
+        }
+    };
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+    .theme--light.v-btn.red,
+    .theme--light.v-btn.green {
+        color: white;
+    }
 </style>
