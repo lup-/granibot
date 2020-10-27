@@ -7,6 +7,25 @@ function GraniBot(token) {
     const telegram = new Telegram(token);
 
     return {
+        async getGroup(id) {
+            const db = await getDb();
+            const groups = db.collection('groups');
+            let foundGroups = await groups.find({id}).toArray();
+
+            return foundGroups[0];
+        },
+        async listGroups() {
+            let filter = {
+                deleted: {$in: [null, false]},
+            };
+
+            const db = await getDb();
+
+            const groups = db.collection('groups');
+            let foundGroups = await groups.find(filter).toArray();
+
+            return foundGroups;
+        },
         async addChatToGroup(chatId, groupId) {
             const db = await getDb();
             const groups = db.collection('groups');
@@ -35,6 +54,14 @@ function GraniBot(token) {
         },
         async sendMessage(chatId, text) {
             return telegram.sendMessage(chatId, text);
+        },
+        async resendMessage(chatId, message) {
+            return telegram.sendCopy(chatId, message);
+        },
+        async resendMessageToGroup(group, message) {
+            let sendPromises = group.members.map(chatId => this.resendMessage(chatId, message));
+            let sent = await Promise.all(sendPromises);
+            return sent;
         },
         async saveChat(chatFields) {
             const db = await getDb();

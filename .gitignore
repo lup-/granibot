@@ -158,3 +158,4 @@ dot.env
 
 # Custom
 /etc/database/*
+/backend/bot_sessions.json
