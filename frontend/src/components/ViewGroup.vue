@@ -1,14 +1,21 @@
 <template>
     <div>
-        <v-card @click.native="gotoGroupDetails">
+        <v-card @click.native.self="gotoGroupDetails">
             <v-card-title>
                 {{group.name}}
                 <v-spacer></v-spacer>
                 Участников: {{group.members ? group.members.length : 0}}
             </v-card-title>
-            <div v-if="isStandalone">
-                <v-chip v-for="member in group.members" :key="member.id">{{member.first_name}} {{member.last_name}}</v-chip>
-            </div>
+            <v-card-text>
+                <v-chip v-for="member in groupMembers(group)" :key="member.id"
+                        class="mr-1"
+                        :x-small="!isStandalone">
+                    {{member.first_name}} {{member.last_name}}
+                </v-chip>
+            </v-card-text>
+            <v-card-text>
+                <v-btn text :href="groupLink(group)" target="_blank" prepend-inner-icon="mdi-link">{{groupLink(group)}}</v-btn>
+            </v-card-text>
 
             <v-card-actions>
                 <v-btn color="red" outlined small @click.prevent.stop="deleteGroup">
@@ -60,6 +67,13 @@
                     this.savedGroup = clone(this.group);
                 }
             },
+            groupLink(group) {
+                let botLink = 'https://t.me/panso_test_bot';
+                return botLink + '?start='+group.id;
+            },
+            groupMembers(group) {
+                return this.$store.getters.groupChats(group.id)
+            }
         },
         computed: {
             groupId() {

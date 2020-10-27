@@ -8,7 +8,7 @@
             ></v-progress-circular>
 
             <v-col cols="12" class="text-center" v-if="isEmpty && !isLoading">Групп не найдено</v-col>
-            <v-col cols="12" md="6" lg="4" v-for="group in groups" :key="'group'+group.id+group.lastUpdated">
+            <v-col cols="12" md="6" xl="4" v-for="group in groups" :key="'group'+group.id+group.lastUpdated">
                 <view-group :input-group="group"></view-group>
             </v-col>
         </v-row>

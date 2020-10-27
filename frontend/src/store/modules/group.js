@@ -55,6 +55,14 @@ export default {
                 let group = state.allGroups.find(group => group.id === groupId);
                 return group ? group.members || [] : [];
             }
+        },
+        groupChats(state, getters, rootState) {
+            return groupId => {
+                let group = state.allGroups.find(group => group.id === groupId);
+                let memberIds = group ? group.members || [] : [];
+
+                return rootState.chat.allChats.filter(chat => memberIds.indexOf(chat.id) !== -1);
+            }
         }
     },
     mutations: {
