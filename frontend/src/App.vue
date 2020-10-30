@@ -39,7 +39,7 @@
 
         <v-app-bar app clipped-left>
             <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-            <v-toolbar-title>Фреза v0.1</v-toolbar-title>
+            <v-toolbar-title>Бункер</v-toolbar-title>
         </v-app-bar>
 
         <v-main>
