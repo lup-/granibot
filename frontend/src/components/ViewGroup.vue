@@ -68,7 +68,7 @@
                 }
             },
             groupLink(group) {
-                let botLink = 'https://t.me/panso_test_bot';
+                let botLink = 'https://t.me/GraniSlovBot';
                 return botLink + '?start='+group.id;
             },
             groupMembers(group) {
