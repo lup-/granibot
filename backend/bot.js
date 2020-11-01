@@ -55,11 +55,19 @@ bot.start(async (ctx) => {
     let chat = await graniBot.saveChat(chatInfo);
     if (commandParams.length > 0) {
         let groupId = commandParams;
-        let group = await graniBot.addChatToGroup(chat.id, groupId);
-        return ctx.reply(group ? `Добро пожаловать в группу "${group.name}"!` : 'Спасибо за заявку, ожидайте сообщений!');
+        await graniBot.addChatToGroup(chat.id, groupId);
     }
 
-    return ctx.reply('Спасибо за заявку, ожидайте сообщений!');
+    return ctx.reply(`Привет. 
+
+Ты в боте Игр граней. И это - одна из комнат Лабиринта, который у тебя еще впереди.
+
+Тут будут разборы, объяснения, объявления и еще много чего. Тут же можно и спросить что-нибудь, если что.
+
+Ну а пока - айда в чат:
+https://t.me/joinchat/FkLb9xG5kP5vm_J6XZnc7Q
+
+И глянь там пост в закрепе, мало ли.`);
 });
 
 bot.command('admin', async ctx => {
@@ -89,12 +97,12 @@ bot.action('admin_new', async ctx => {
     return ctx.reply('Я готов. Теперь нужно сказать что-то умное');
 });
 
-bot.on('message', async (ctx) => {
+bot.on('message', async (ctx, next) => {
     let isAdmin = ctx.session.isAdmin;
     let useNextMessage = ctx.session.useNextMessage;
 
     if (!isAdmin) {
-        return ctx.reply('Терпение, скоро будет круто!');
+        return next();
     }
 
     if (!useNextMessage) {
