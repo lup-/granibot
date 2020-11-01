@@ -3,6 +3,48 @@ const getDb = require('./Database');
 
 let botInstance = false;
 
+function escapeMarkdown(text) {
+    //см. https://core.telegram.org/bots/api#markdownv2-style
+
+    let pairedSymbols = [
+        {from: '*', to: '@@asterisk@@'},
+        {from: '__', to: '@@underline@@'},
+        {from: '_', to: '@@underscore@@'},
+        {from: '~', to: '@@strikethrough@@'},
+        {from: '```', to: '@@blockcode@@'},
+        {from: '`', to: '@@inlinecode@@'},
+    ];
+
+    let allSymbols = pairedSymbols.concat([
+        {from: '[', to: '@@lsqb@@'},
+        {from: ']', to: '@@rsqb@@'},
+        {from: '(', to: '@@lcrb@@'},
+        {from: ')', to: '@@rcrb@@'},
+    ]);
+
+    let safeText = text;
+    for (const replacement of pairedSymbols) {
+        let fromRegexp = new RegExp("\\"+replacement.from+"(.*?)\\"+replacement.from, 'gms');
+        let toExp = replacement.to+'$1'+replacement.to;
+
+        safeText = safeText.replace( fromRegexp, toExp );
+    }
+
+    safeText = safeText.replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        '@@lsqb@@$1@@rsqb@@@@lcrb@@$2@@rcrb@@'
+    );
+
+    safeText = safeText.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+
+    for (const replacement of allSymbols) {
+        let allRegexp = new RegExp( "\\"+replacement.to, 'g' );
+        safeText = safeText.replace(allRegexp, replacement.from);
+    }
+
+    return safeText;
+}
+
 function GraniBot(token) {
     const telegram = new Telegram(token);
 
@@ -52,8 +94,14 @@ function GraniBot(token) {
 
             return group;
         },
-        async sendMessage(chatId, text) {
-            return telegram.sendMessage(chatId, text);
+        async sendMessage(chatId, text, markdown = true) {
+            let options = {};
+            if (markdown) {
+                options['parse_mode'] = 'MarkdownV2';
+                text = escapeMarkdown(text);
+            }
+
+            return telegram.sendMessage(chatId, text, options);
         },
         async resendMessage(chatId, message) {
             return telegram.sendCopy(chatId, message);

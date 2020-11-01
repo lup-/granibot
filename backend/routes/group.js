@@ -4,6 +4,8 @@ const moment = require('moment');
 const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
 
+const getGraniBot = require('../modules/GraniBot');
+const graniBot = getGraniBot(process.env.BOT_TOKEN);
 
 module.exports = {
     async load(ctx, next) {
@@ -96,7 +98,7 @@ module.exports = {
             return next();
         }
 
-        let sendPromises = chats.map(chatId => telegram.sendMessage(chatId, text));
+        let sendPromises = chats.map(chatId => graniBot.sendMessage(chatId, text, true));
         let sent = await Promise.all(sendPromises);
 
         ctx.body = {sent};
