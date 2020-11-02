@@ -1,19 +1,17 @@
-const getDb = require('../modules/Database');
+const {getDb} = require('../modules/Database');
 const shortid = require('shortid');
 const moment = require('moment');
-const Telegram = require('telegraf/telegram');
-const telegram = new Telegram(process.env.BOT_TOKEN);
 
 const getGraniBot = require('../modules/GraniBot');
 const graniBot = getGraniBot(process.env.BOT_TOKEN);
 
 module.exports = {
-    async load(ctx, next) {
+    async load(ctx) {
         const id = ctx.params.id;
 
         if (!id) {
             ctx.body = {group: false};
-            return next();
+            return;
         }
 
         const db = await getDb();
@@ -22,13 +20,13 @@ module.exports = {
 
         if (!group) {
             ctx.body = {group: false};
-            return next();
+            return;
         }
 
         ctx.body = {group};
-        return next();
+        return;
     },
-    async list(ctx, next) {
+    async list(ctx) {
         let filter = ctx.request.body && ctx.request.body.filter
             ? ctx.request.body.filter || {}
             : {};
@@ -43,9 +41,9 @@ module.exports = {
         let foundGroups = await groups.find(filter).toArray();
 
         ctx.body = {groups: foundGroups};
-        return next();
+        return;
     },
-    async save(ctx, next) {
+    async save(ctx) {
         const db = await getDb();
         const groups = db.collection('groups');
 
@@ -64,14 +62,14 @@ module.exports = {
         let group = updateResult.value || false;
 
         ctx.body = {group};
-        return next();
+        return;
     },
-    async delete(ctx, next) {
+    async delete(ctx) {
         const id = ctx.request.body.id;
 
         if (!id) {
             ctx.body = {group: false};
-            return next();
+            return;
         }
 
         const db = await getDb();
@@ -87,21 +85,21 @@ module.exports = {
         let group = updateResult.value || false;
 
         ctx.body = {group};
-        return next();
+        return;
     },
-    async message(ctx, next) {
+    async message(ctx) {
         const chats = ctx.request.body.chats;
         const text =  ctx.request.body.text;
 
         if (!chats || !text) {
             ctx.body = {sent: false};
-            return next();
+            return;
         }
 
         let sendPromises = chats.map(chatId => graniBot.sendMessage(chatId, text, true));
         let sent = await Promise.all(sendPromises);
 
         ctx.body = {sent};
-        return next();
+        return;
     }
 }

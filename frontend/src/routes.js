@@ -3,6 +3,8 @@ import EditGroup from "@/components/EditGroup";
 import ViewGroup from "@/components/ViewGroup";
 import ListChats from "@/components/ListChats";
 import MessageForm from "@/components/MessageForm";
+import EditSettings from "@/components/EditSettings";
+import DirectChat from "@/components/DirectChat";
 
 export default [
     { name: 'home', path: '/', component: ListGroups },
@@ -15,4 +17,7 @@ export default [
     { name: 'listChats', path: '/chat/list', component: ListChats },
 
     { name: 'sendMessage', path: '/message/new', component: MessageForm },
+    { name: 'editSettings', path: '/settings/edit', component: EditSettings },
+
+    { name: 'directChat', path: '/direct', component: DirectChat}
 ]

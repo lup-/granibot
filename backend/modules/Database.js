@@ -6,13 +6,19 @@ const DB_URL = `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`;
 
 let dbInstance = false;
 
-module.exports = async function () {
+async function getDb() {
     if (dbInstance) {
         return dbInstance;
     }
 
+    return await newDbInstance();
+}
+
+async function newDbInstance() {
     let client = await MongoClient.connect(DB_URL, {useNewUrlParser: true});
     dbInstance = client.db(DB_NAME);
 
     return dbInstance;
 }
+
+module.exports = {getDb, newDbInstance}

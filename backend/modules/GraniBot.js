@@ -1,5 +1,7 @@
 const Telegram = require('telegraf/telegram');
-const getDb = require('./Database');
+const {ObjectId} = require('mongodb');
+const {getDb, newDbInstance} = require('./Database');
+const moment = require('moment');
 
 let botInstance = false;
 
@@ -47,6 +49,8 @@ function escapeMarkdown(text) {
 
 function GraniBot(token) {
     const telegram = new Telegram(token);
+    let settings = {};
+    let messages = {};
 
     return {
         async getGroup(id) {
@@ -67,6 +71,18 @@ function GraniBot(token) {
             let foundGroups = await groups.find(filter).toArray();
 
             return foundGroups;
+        },
+        async listUnread() {
+            let filter = {
+                unread: true,
+                deleted: {$in: [null, false]},
+            };
+
+            const db = await getDb();
+            const chats = db.collection('chats');
+            let foundChats = await chats.find(filter).toArray();
+
+            return foundChats;
         },
         async addChatToGroup(chatId, groupId) {
             const db = await getDb();
@@ -94,6 +110,14 @@ function GraniBot(token) {
 
             return group;
         },
+        async sendReply(chatId, text, markdown = false) {
+            let message = await this.sendMessage(chatId, text, markdown);
+            if (message) {
+                await this.saveMessage(chatId, message);
+            }
+
+            return message;
+        },
         async sendMessage(chatId, text, markdown = true) {
             let options = {};
             if (markdown) {
@@ -111,13 +135,140 @@ function GraniBot(token) {
             let sent = await Promise.all(sendPromises);
             return sent;
         },
+        async getChat(id) {
+            const db = await getDb();
+            const chats = db.collection('chats');
+            let chat = await chats.findOne({id});
+
+            return chat;
+        },
         async saveChat(chatFields) {
             const db = await getDb();
             const chats = db.collection('chats');
             const id = chatFields.id;
 
-            let updateResult = await chats.findOneAndReplace({id}, chatFields, {upsert: true, returnOriginal: false});
+            let oldChat = this.getChat(id) || {};
+            let chatToSave = Object.assign(oldChat, chatFields);
+
+            let updateResult = await chats.findOneAndReplace({id}, chatToSave, {upsert: true, returnOriginal: false});
             return updateResult.value || false;
+        },
+        async toggleUnreadStatus(chatId, newStatus = true) {
+            let chat = await this.getChat(chatId);
+            chat.unread = newStatus;
+            if (newStatus === false) {
+                chat.last_read = moment().unix();
+            }
+            return this.saveChat(chat);
+        },
+        async saveMessage(chatId, message) {
+            const db = await getDb();
+            const messages = db.collection('messages');
+            const message_id = message.message_id;
+
+            if (!message.chat_id) {
+                message.chat_id = chatId;
+            }
+
+            message.received_date = moment().unix();
+
+            let updateResult = await messages.findOneAndReplace({message_id}, message, {upsert: true, returnOriginal: false});
+            let savedMessage = updateResult.value || false;
+            await this.toggleUnreadStatus(chatId, true);
+
+            return savedMessage;
+        },
+        async getChatHistory(chatId) {
+            let chat = await this.getChat(chatId);
+            let lastRead = chat ? chat.last_read || 0 : 0;
+
+            let filter = {
+                chat_id: chatId,
+                received_date: {$gte: lastRead},
+                deleted: {$in: [null, false]},
+            };
+
+            const db = await getDb();
+
+            const messages = db.collection('messages');
+            let foundMessages = await messages.find(filter).toArray();
+
+            return foundMessages;
+        },
+
+        async loadSettings(defaultSettings = {}) {
+            const db = await getDb();
+            const settingsStore = db.collection('settings');
+            let loadedSettings = await settingsStore.find({}).toArray();
+            if (loadedSettings.length === 0) {
+                loadedSettings = [{}];
+            }
+
+            settings = Object.assign(defaultSettings, loadedSettings[0]);
+            return settings;
+        },
+        async reloadSettings() {
+            await newDbInstance();
+            settings = await this.loadSettings(settings);
+            messages = settings.messages || {};
+        },
+        async saveSettings(newSettings) {
+            const db = await getDb();
+            const settingsStore = db.collection('settings');
+            let filter = {};
+            let settingsToSave = Object.assign(settings, newSettings);
+
+            if (settingsToSave) {
+                let settingsId = settingsToSave['_id'];
+                if (settingsId) {
+                    settingsId = new ObjectId(settingsId);
+                    filter = {'_id': settingsId}
+                    delete settingsToSave['_id'];
+                }
+            }
+
+            let updateResult = await settingsStore.findOneAndReplace(filter, settingsToSave, {upsert: true, returnOriginal: false});
+
+            return updateResult.value || false;
+        },
+        async initMessages() {
+            let defaultMessages = {
+                'greetings': `Привет. 
+
+Ты в боте Игр граней. И это - одна из комнат Лабиринта, который у тебя еще впереди.
+
+Тут будут разборы, объяснения, объявления и еще много чего.
+
+Ну а пока - айда в чат:
+https://t.me/joinchat/FkLb9xG5kP5vm_J6XZnc7Q
+
+И глянь там пост в закрепе, мало ли.`,
+                'admin_deny': 'Мне родители запрещают говорить с незнакомыми!',
+                'admin_hello': 'Привет, мудрый гранитель!',
+                'admin_need_auth': 'Гранитель, представьтесь!',
+                'admin_message_listen': 'Я готов. Теперь нужно сказать что-то умное',
+                'admin_message_unknown': 'Так, и что мне с этим делать?',
+                'admin_message_accepted': 'Принято',
+                'admin_group_list': 'Вот, есть из чего выбрать',
+                'admin_group_accepted': "Так, с группой определились",
+                'admin_group_error': "Ой, про группу не понял что произошло. Можно повторить?",
+                'admin_reset': 'Оооооок, ладно. Сбросил',
+                'admin_missing_params': 'Только начал и понял, что чего-то не хватает',
+                'admin_send_info': `Переслал сообщение %id% в группу %group_name% (%sent_count%/%chats_count%)`,
+                'admin_reloaded': 'Перегрузил свои настройки',
+            }
+
+            let settings = await this.loadSettings();
+            let loadedMessages = settings && settings.messages ? settings.messages : {};
+
+            messages = Object.assign(defaultMessages, loadedMessages);
+            settings.messages = messages;
+            await this.saveSettings(settings);
+
+            return messages;
+        },
+        getMessage(code) {
+            return messages[code] || code;
         }
     }
 }

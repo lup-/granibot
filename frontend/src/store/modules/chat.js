@@ -6,6 +6,8 @@ export default {
         filter: false,
         chats: [],
         allChats: [],
+        unread: [],
+        chatHistory: [],
     },
     actions: {
         async loadChat({commit}, chatId) {
@@ -17,6 +19,14 @@ export default {
             commit('setChatFilter', filter);
             let response = await axios.post(`/api/chat/list`, {filter});
             return commit('setChats', response.data.chats);
+        },
+        async loadUnreadChats({commit}) {
+            let response = await axios.post(`/api/chat/unread`, {});
+            return commit('setUnreadChats', response.data.chats);
+        },
+        async loadChatHistory({commit}, chatId) {
+            let response = await axios.post(`/api/chat/history`, {chatId});
+            return commit('setChatHistory', response.data.history);
         },
         async loadAllChats({commit}) {
             let response = await axios.post(`/api/chat/list`, {});
@@ -41,7 +51,14 @@ export default {
 
             return dispatch('reloadChats');
         },
-
+        async reply({dispatch}, {chatId, text}) {
+            await axios.post(`/api/chat/reply`, {chatId, text});
+            return dispatch('loadChatHistory', chatId);
+        },
+        async markRead({dispatch}, chatId) {
+            await axios.post(`/api/chat/read`, {chatId});
+            return dispatch('loadUnreadChats');
+        }
     },
     mutations: {
         setChat(state, chat) {
@@ -53,8 +70,14 @@ export default {
         setAllChats(state, chats) {
             state.allChats = chats;
         },
+        setUnreadChats(state, chats) {
+            state.unread = chats;
+        },
         setChatFilter(state, filter) {
             state.filter = filter;
+        },
+        setChatHistory(state, history) {
+            state.chatHistory = history;
         },
     }
 }

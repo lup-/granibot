@@ -34,6 +34,30 @@
                         <v-list-item-title>Список участников</v-list-item-title>
                     </v-list-item-content>
                 </v-list-item>
+                <v-list-item  @click="$router.push({name: 'directChat'})" :disabled="$route.name === 'directChat'">
+                    <v-list-item-action>
+                        <v-icon>mdi-chat</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>
+                            <v-badge :content="unreadCount" color="red" dark v-if="unreadCount">
+                                Чаты с участниками
+                            </v-badge>
+                            <span v-else>
+                                Чаты с участниками
+                            </span>
+                        </v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
+                <v-divider></v-divider>
+                <v-list-item  @click="$router.push({name: 'editSettings'})" :disabled="$route.name === 'editSettings'">
+                    <v-list-item-action>
+                        <v-icon>mdi-cog</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>Настройки</v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
             </v-list>
         </v-navigation-drawer>
 
@@ -60,7 +84,16 @@
         mounted() {
             this.$store.dispatch('loadAllGroups');
             this.$store.dispatch('loadAllChats');
+            this.$store.dispatch('loadUnreadChats');
+        },
+        computed: {
+            unreadCount() {
+                return this.$store.state.chat.unread
+                    ? this.$store.state.chat.unread.length || 0
+                    : 0
+            }
         }
+
     };
 </script>
 
