@@ -43,6 +43,12 @@ graniBot.initMessages().then(() => {
         return ctx.reply(__('admin_hello'), rootMenu, Telegraf.Extra.markdown());
     });
 
+    app.catch((err, ctx, next) => {
+        console.log(err);
+        return next ? next() : null;
+    });
+
+
     applyRoutes(app);
     app.launch();
 });

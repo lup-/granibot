@@ -2,13 +2,14 @@
     <v-card>
         <v-card-title>
             {{chat.first_name}} {{chat.last_name}}
+            <v-icon v-if="chat.blocked">mdi-skull</v-icon>
             <!--
             <v-btn icon small @click="isEditing = true" v-if="!isEditing"><v-icon small>mdi-pencil</v-icon></v-btn>
             <v-btn icon small @click="commitGroups" v-else><v-icon small>mdi-check</v-icon></v-btn>
             -->
         </v-card-title>
         <v-card-subtitle>
-            <a :href="'https://t.me/'+chat.username" target="_blank">@{{chat.username}}</a>
+            <a :href="'https://t.me/'+(chat.username || chat.id)" target="_blank">@{{chat.username || chat.id}}</a>
         </v-card-subtitle>
         <v-card-text>
             <v-autocomplete v-if="isEditing"

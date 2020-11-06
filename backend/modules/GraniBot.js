@@ -46,6 +46,9 @@ function escapeMarkdown(text) {
 
     return safeText;
 }
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function GraniBot(token) {
     const telegram = new Telegram(token);
@@ -125,13 +128,34 @@ function GraniBot(token) {
                 text = escapeMarkdown(text);
             }
 
-            return telegram.sendMessage(chatId, text, options);
+            return this.safeSend(chatId, (chatId, text, options) => telegram.sendMessage(chatId, text, options), [chatId, text, options]);
         },
         async resendMessage(chatId, message) {
             return telegram.sendCopy(chatId, message);
         },
+        async safeSend(chatId, sendFn, sendArgs) {
+            let response = false;
+
+            try {
+                response = await sendFn(...sendArgs);
+            }
+            catch (sendError) {
+                if (sendError && sendError.code) {
+                    if (sendError.code === 403) {
+                        return this.toggleUserBlock(chatId);
+                    }
+
+                    if (sendError.code === 429) {
+                        await sleep(1000);
+                        return this.safeSend(chatId, sendFn, sendArgs);
+                    }
+                }
+            }
+
+            return response;
+        },
         async resendMessageToGroup(group, message) {
-            let sendPromises = group.members.map(chatId => this.resendMessage(chatId, message));
+            let sendPromises = group.members.map(chatId => this.safeSend(chatId, this.resendMessage, [chatId, message]));
             let sent = await Promise.all(sendPromises);
             return sent;
         },
@@ -147,11 +171,19 @@ function GraniBot(token) {
             const chats = db.collection('chats');
             const id = chatFields.id;
 
-            let oldChat = this.getChat(id) || {};
+            let oldChat = await this.getChat(id) || {};
             let chatToSave = Object.assign(oldChat, chatFields);
 
             let updateResult = await chats.findOneAndReplace({id}, chatToSave, {upsert: true, returnOriginal: false});
             return updateResult.value || false;
+        },
+        async toggleUserBlock(chatId) {
+            let updateFields = {
+                id: chatId,
+                blocked: moment().unix(),
+            }
+
+            return this.saveChat(updateFields);
         },
         async toggleUnreadStatus(chatId, newStatus = true) {
             let chat = await this.getChat(chatId);
